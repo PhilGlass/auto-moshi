@@ -1,0 +1,13 @@
+apply from: file("$rootDir/gradle/dependencies.gradle")
+
+subprojects {
+  buildscript {
+    repositories {
+      mavenCentral()
+    }
+  }
+
+  repositories {
+    mavenCentral()
+  }
+}

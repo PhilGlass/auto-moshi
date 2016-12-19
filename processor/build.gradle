@@ -1,0 +1,23 @@
+buildscript {
+  dependencies {
+    classpath deps.kotlin.plugin
+  }
+}
+
+apply plugin: 'kotlin'
+
+dependencies {
+  compile project(':annotations')
+
+  compile deps.kotlin.stdlib
+  compile deps.autoValue
+  compile deps.moshi
+  compile deps.javaPoet
+  compile deps.autoCommon
+  compile deps.autoService
+  kapt deps.autoService
+
+  testCompile deps.test.junit
+  testCompile deps.test.truth
+  testCompile deps.test.compileTesting
+}
