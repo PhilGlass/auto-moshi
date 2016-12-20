@@ -11,6 +11,7 @@ import com.squareup.javapoet.ParameterSpec
 import com.squareup.javapoet.ParameterizedTypeName
 import com.squareup.javapoet.TypeName
 import com.squareup.javapoet.TypeSpec
+import com.squareup.moshi.Json
 import com.squareup.moshi.JsonAdapter
 import com.squareup.moshi.JsonReader
 import com.squareup.moshi.JsonWriter
@@ -28,6 +29,7 @@ import javax.lang.model.type.TypeMirror
 class AutoMoshiExtension : AutoValueExtension() {
   private data class Property(val name: String, val method: ExecutableElement) {
     val type: TypeMirror = method.returnType
+    val serializedName: String = method.getAnnotation(Json::class.java)?.name ?: name
   }
 
   override fun applicable(context: Context) = isAnnotationPresent(context.autoValueClass(), AutoMoshi::class.java)
@@ -86,7 +88,7 @@ class AutoMoshiExtension : AutoValueExtension() {
           addStatement("final \$T name = \$N.nextName()", String::class.java, reader)
           controlFlow("switch (name)") {
             for ((property, adapter) in adapters) {
-              controlFlow("case \$S:", property.name) {
+              controlFlow("case \$S:", property.serializedName) {
                 addStatement("\$N = \$N.fromJson(\$N)", property.name, adapter, reader)
                 addStatement("break")
               }
@@ -114,7 +116,7 @@ class AutoMoshiExtension : AutoValueExtension() {
       return builder.apply {
         addStatement("\$N.beginObject()", writer)
         for ((property, adapter) in adapters) {
-          addStatement("\$N.name(\$S)", writer, property.name)
+          addStatement("\$N.name(\$S)", writer, property.serializedName)
           addStatement("\$N.toJson(\$N, \$N.\$L())", adapter, writer, value, property.method.simpleName)
         }
         addStatement("\$N.endObject()", writer)

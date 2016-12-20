@@ -22,5 +22,13 @@ class AutoMoshiExtensionTest {
     }
   }
 
+
+  @Test fun `Supports @Json`() {
+    compiler().compileResource("JsonProperty").let {
+      assertThat(it).succeededWithoutWarnings()
+      assertThat(it).generatedSourceFileEquivalentToResource("AutoValue_JsonProperty")
+    }
+  }
+
   private fun compiler() = Compiler.javac().withProcessors(AutoValueProcessor(listOf(AutoMoshiExtension())))
 }
