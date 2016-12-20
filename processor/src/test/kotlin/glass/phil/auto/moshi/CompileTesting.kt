@@ -7,7 +7,7 @@ import com.google.testing.compile.JavaFileObjects
 import javax.tools.JavaFileObject
 import javax.tools.JavaFileObject.Kind.SOURCE
 
-fun Compiler.compileResource(simpleName: String): Compilation = compile(forJavaResource(simpleName))
+fun Compiler.compileResources(vararg simpleNames: String): Compilation = compile(simpleNames.map(::forJavaResource))
 
 fun Compilation.generatedSourceFileWithSimpleName(simpleName: String) =
     generatedSourceFiles().any { it.isNameCompatible(simpleName, SOURCE) }

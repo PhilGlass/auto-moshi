@@ -8,7 +8,7 @@ import org.junit.Test
 
 class AutoMoshiExtensionTest {
   @Test fun `Only generates subclass when @AutoMoshi is present`() {
-    compiler().compileResource("NoAutoMoshi").let {
+    compiler().compileResources("NoAutoMoshi").let {
       assertThat(it).succeededWithoutWarnings()
       assertThat(it.generatedSourceFileWithSimpleName("AutoValue_NoAutoMoshi")).isTrue()
       assertThat(it.generatedSourceFileWithSimpleName("\$AutoValue_NoAutoMoshi")).isFalse()
@@ -16,17 +16,23 @@ class AutoMoshiExtensionTest {
   }
 
   @Test fun `Supports simple properties`() {
-    compiler().compileResource("Simple").let {
+    compiler().compileResources("Simple").let {
       assertThat(it).succeededWithoutWarnings()
       assertThat(it).generatedSourceFileEquivalentToResource("AutoValue_Simple")
     }
   }
 
-
   @Test fun `Supports @Json`() {
-    compiler().compileResource("JsonProperty").let {
+    compiler().compileResources("JsonProperty").let {
       assertThat(it).succeededWithoutWarnings()
       assertThat(it).generatedSourceFileEquivalentToResource("AutoValue_JsonProperty")
+    }
+  }
+
+  @Test fun `Supports @Nullable`() {
+    compiler().compileResources("Nullable", "NullableProperty").let {
+      assertThat(it).succeededWithoutWarnings()
+      assertThat(it).generatedSourceFileEquivalentToResource("AutoValue_NullableProperty")
     }
   }
 

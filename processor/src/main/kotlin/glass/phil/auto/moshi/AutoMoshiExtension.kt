@@ -30,6 +30,7 @@ class AutoMoshiExtension : AutoValueExtension() {
   private data class Property(val name: String, val method: ExecutableElement) {
     val type: TypeMirror = method.returnType
     val serializedName: String = method.getAnnotation(Json::class.java)?.name ?: name
+    val nullable = method.hasAnnotation("Nullable")
   }
 
   override fun applicable(context: Context) = isAnnotationPresent(context.autoValueClass(), AutoMoshi::class.java)
@@ -65,7 +66,8 @@ class AutoMoshiExtension : AutoValueExtension() {
       val moshi = ParameterSpec.builder(Moshi::class.java, "moshi").build()
       val builder = MethodSpec.constructorBuilder().addParameter(moshi)
       for ((property, adapter) in adapters) {
-        builder.addStatement("\$N = \$N.adapter(\$T.class)", adapter, moshi, property.type)
+        builder.addStatement("\$N = \$N.adapter(\$T.class)\$L", adapter, moshi, property.type,
+            if (property.nullable) ".nullSafe()" else "")
       }
       return builder.build()
     }
