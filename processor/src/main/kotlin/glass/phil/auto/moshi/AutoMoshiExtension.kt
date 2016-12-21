@@ -4,6 +4,7 @@ import com.google.auto.common.MoreElements.isAnnotationPresent
 import com.google.auto.service.AutoService
 import com.google.auto.value.extension.AutoValueExtension
 import com.squareup.javapoet.ClassName
+import com.squareup.javapoet.CodeBlock
 import com.squareup.javapoet.FieldSpec
 import com.squareup.javapoet.JavaFile
 import com.squareup.javapoet.MethodSpec
@@ -16,6 +17,7 @@ import com.squareup.moshi.JsonAdapter
 import com.squareup.moshi.JsonReader
 import com.squareup.moshi.JsonWriter
 import com.squareup.moshi.Moshi
+import com.squareup.moshi.Types
 import java.io.IOException
 import javax.lang.model.element.ExecutableElement
 import javax.lang.model.element.Modifier.ABSTRACT
@@ -23,6 +25,8 @@ import javax.lang.model.element.Modifier.FINAL
 import javax.lang.model.element.Modifier.PRIVATE
 import javax.lang.model.element.Modifier.PUBLIC
 import javax.lang.model.element.Modifier.STATIC
+import javax.lang.model.type.DeclaredType
+import javax.lang.model.type.TypeKind.DECLARED
 import javax.lang.model.type.TypeMirror
 
 @AutoService(AutoValueExtension::class)
@@ -58,15 +62,28 @@ class AutoMoshiExtension : AutoValueExtension() {
 
     val adapters: Map<Property, FieldSpec> = properties.associateBy({ it }, {
       val boxedType = TypeName.get(it.type).let { if (it.isPrimitive) it.box() else it }
-      val fieldType = ParameterizedTypeName.get(ClassName.get(JsonAdapter::class.java), boxedType);
+      val fieldType = ParameterizedTypeName.get(ClassName.get(JsonAdapter::class.java), boxedType)
       FieldSpec.builder(fieldType, "${it.name}Adapter", PRIVATE, FINAL).build()
     })
+
+    fun resolve(type: TypeMirror): CodeBlock {
+      return if (type.kind == DECLARED && (type as DeclaredType).typeArguments.isNotEmpty()) {
+        val rawType = context.processingEnvironment().typeUtils.erasure(type)
+        CodeBlock.builder().apply {
+          add("\$T.newParameterizedType(\$T.class", Types::class.java, rawType)
+          type.typeArguments.forEach { add(", \$L", resolve(it)) }
+          add(")")
+        }.build()
+      } else {
+        CodeBlock.of("\$T.class", type)
+      }
+    }
 
     fun constructor(): MethodSpec {
       val moshi = ParameterSpec.builder(Moshi::class.java, "moshi").build()
       val builder = MethodSpec.constructorBuilder().addParameter(moshi)
       for ((property, adapter) in adapters) {
-        builder.addStatement("\$N = \$N.adapter(\$T.class)\$L", adapter, moshi, property.type,
+        builder.addStatement("\$N = \$N.adapter(\$L)\$L", adapter, moshi, resolve(property.type),
             if (property.nullable) ".nullSafe()" else "")
       }
       return builder.build()

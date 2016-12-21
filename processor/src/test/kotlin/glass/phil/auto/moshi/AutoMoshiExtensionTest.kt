@@ -36,5 +36,12 @@ class AutoMoshiExtensionTest {
     }
   }
 
+  @Test fun `Supports parameterized properties`() {
+    compiler().compileResources("Parameterized").let {
+      assertThat(it).succeededWithoutWarnings()
+      assertThat(it).generatedSourceFileEquivalentToResource("AutoValue_Parameterized")
+    }
+  }
+
   private fun compiler() = Compiler.javac().withProcessors(AutoValueProcessor(listOf(AutoMoshiExtension())))
 }
