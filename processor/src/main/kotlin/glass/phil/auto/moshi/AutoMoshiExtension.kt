@@ -25,22 +25,34 @@ import javax.lang.model.element.Modifier.FINAL
 import javax.lang.model.element.Modifier.PRIVATE
 import javax.lang.model.element.Modifier.PUBLIC
 import javax.lang.model.element.Modifier.STATIC
+import javax.lang.model.element.Name
 import javax.lang.model.type.DeclaredType
+import javax.lang.model.type.ExecutableType
 import javax.lang.model.type.TypeKind.DECLARED
 import javax.lang.model.type.TypeMirror
 
 @AutoService(AutoValueExtension::class)
 class AutoMoshiExtension : AutoValueExtension() {
-  private data class Property(val name: String, val method: ExecutableElement) {
-    val type: TypeMirror = method.returnType
-    val serializedName: String = method.getAnnotation(Json::class.java)?.name ?: name
-    val nullable = method.hasAnnotation("Nullable")
-  }
+  private data class Property(
+      val name: String,
+      val methodName: Name,
+      val type: TypeMirror,
+      val serializedName: String,
+      val nullable: Boolean
+  )
 
   override fun applicable(context: Context) = isAnnotationPresent(context.autoValueClass(), AutoMoshi::class.java)
 
   override fun generateClass(context: Context, className: String, classToExtend: String, isFinal: Boolean): String {
-    val properties = context.properties().map { Property(it.key, it.value) }
+    fun toProperty(name: String, method: ExecutableElement): Property {
+      val resolvedMethod = context.types.asMemberOf(context.autoValueClass().asType() as DeclaredType, method)
+      val resolvedType = (resolvedMethod as ExecutableType).returnType
+      val serializedName = method.getAnnotation(Json::class.java)?.name ?: name
+      return Property(name = name, methodName = method.simpleName, type = resolvedType,
+          serializedName = serializedName, nullable = method.hasAnnotation("Nullable"))
+    }
+
+    val properties = context.properties().map { toProperty(it.key, it.value) }
 
     val constructor = MethodSpec.constructorBuilder()
         .addParameters(properties.map { ParameterSpec.builder(TypeName.get(it.type), it.name).build() })
@@ -68,7 +80,7 @@ class AutoMoshiExtension : AutoValueExtension() {
 
     fun resolve(type: TypeMirror): CodeBlock {
       return if (type.kind == DECLARED && (type as DeclaredType).typeArguments.isNotEmpty()) {
-        val rawType = context.processingEnvironment().typeUtils.erasure(type)
+        val rawType = context.types.erasure(type)
         CodeBlock.builder().apply {
           add("\$T.newParameterizedType(\$T.class", Types::class.java, rawType)
           type.typeArguments.forEach { add(", \$L", resolve(it)) }
@@ -136,7 +148,7 @@ class AutoMoshiExtension : AutoValueExtension() {
         addStatement("\$N.beginObject()", writer)
         for ((property, adapter) in adapters) {
           addStatement("\$N.name(\$S)", writer, property.serializedName)
-          addStatement("\$N.toJson(\$N, \$N.\$L())", adapter, writer, value, property.method.simpleName)
+          addStatement("\$N.toJson(\$N, \$N.\$L())", adapter, writer, value, property.methodName)
         }
         addStatement("\$N.endObject()", writer)
       }.build()

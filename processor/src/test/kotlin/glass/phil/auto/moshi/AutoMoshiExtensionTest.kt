@@ -43,5 +43,12 @@ class AutoMoshiExtensionTest {
     }
   }
 
+  @Test fun `Supports extending generic types`() {
+    compiler().compileResources("Base", "ExtendsGeneric").let {
+      assertThat(it).succeededWithoutWarnings()
+      assertThat(it).generatedSourceFileEquivalentToResource("AutoValue_ExtendsGeneric")
+    }
+  }
+
   private fun compiler() = Compiler.javac().withProcessors(AutoValueProcessor(listOf(AutoMoshiExtension())))
 }
