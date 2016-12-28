@@ -19,6 +19,7 @@ import com.squareup.moshi.JsonWriter
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.Types
 import java.io.IOException
+import java.lang.reflect.Type
 import javax.lang.model.element.ExecutableElement
 import javax.lang.model.element.Modifier.ABSTRACT
 import javax.lang.model.element.Modifier.FINAL
@@ -29,7 +30,9 @@ import javax.lang.model.element.Name
 import javax.lang.model.type.DeclaredType
 import javax.lang.model.type.ExecutableType
 import javax.lang.model.type.TypeKind.DECLARED
+import javax.lang.model.type.TypeKind.TYPEVAR
 import javax.lang.model.type.TypeMirror
+import javax.lang.model.type.TypeVariable
 
 @AutoService(AutoValueExtension::class)
 class AutoMoshiExtension : AutoValueExtension() {
@@ -60,7 +63,8 @@ class AutoMoshiExtension : AutoValueExtension() {
         .build()
 
     val type = TypeSpec.classBuilder(className)
-        .superclass(ClassName.get(context.packageName(), classToExtend))
+        .superclass(typeName(ClassName.get(context.packageName(), classToExtend), context.typeVariables))
+        .addTypeVariables(context.typeVariables)
         .addModifiers(if (isFinal) FINAL else ABSTRACT)
         .addMethod(constructor)
         .addType(jsonAdapter(context, properties))
@@ -70,7 +74,7 @@ class AutoMoshiExtension : AutoValueExtension() {
   }
 
   private fun jsonAdapter(context: Context, properties: List<Property>): TypeSpec {
-    val autoValueClass = ClassName.get(context.autoValueClass())
+    val autoValueClass = TypeName.get(context.autoValueClass().asType())
 
     val adapters: Map<Property, FieldSpec> = properties.associateBy({ it }, {
       val boxedType = TypeName.get(it.type).let { if (it.isPrimitive) it.box() else it }
@@ -78,27 +82,35 @@ class AutoMoshiExtension : AutoValueExtension() {
       FieldSpec.builder(fieldType, "${it.name}Adapter", PRIVATE, FINAL).build()
     })
 
-    fun resolve(type: TypeMirror): CodeBlock {
-      return if (type.kind == DECLARED && (type as DeclaredType).typeArguments.isNotEmpty()) {
-        val rawType = context.types.erasure(type)
-        CodeBlock.builder().apply {
-          add("\$T.newParameterizedType(\$T.class", Types::class.java, rawType)
-          type.typeArguments.forEach { add(", \$L", resolve(it)) }
-          add(")")
-        }.build()
-      } else {
-        CodeBlock.of("\$T.class", type)
-      }
-    }
-
     fun constructor(): MethodSpec {
       val moshi = ParameterSpec.builder(Moshi::class.java, "moshi").build()
-      val builder = MethodSpec.constructorBuilder().addParameter(moshi)
-      for ((property, adapter) in adapters) {
-        builder.addStatement("\$N = \$N.adapter(\$L)\$L", adapter, moshi, resolve(property.type),
-            if (property.nullable) ".nullSafe()" else "")
+      val typeArgs = ParameterSpec.builder(Array<Type>::class.java, "typeArgs").build()
+
+      fun resolve(type: TypeMirror): CodeBlock {
+        return if (type.kind == DECLARED && (type as DeclaredType).typeArguments.isNotEmpty()) {
+          val rawType = context.types.erasure(type)
+          CodeBlock.builder().apply {
+            add("\$T.newParameterizedType(\$T.class", Types::class.java, rawType)
+            type.typeArguments.forEach { add(", \$L", resolve(it)) }
+            add(")")
+          }.build()
+        } else if (type.kind == TYPEVAR) {
+          val index = context.autoValueClass().typeParameters.indexOf((type as TypeVariable).asElement())
+          CodeBlock.of("\$N[$index]", typeArgs)
+        } else {
+          CodeBlock.of("\$T.class", type)
+        }
       }
-      return builder.build()
+
+      return MethodSpec.constructorBuilder().addParameter(moshi).apply {
+        if (context.generic) {
+          addParameter(typeArgs)
+        }
+        for ((property, adapter) in adapters) {
+          addStatement("\$N = \$N.adapter(\$L)\$L", adapter, moshi, resolve(property.type),
+              if (property.nullable) ".nullSafe()" else "")
+        }
+      }.build()
     }
 
     fun fromJson(): MethodSpec {
@@ -130,8 +142,8 @@ class AutoMoshiExtension : AutoValueExtension() {
           }
         }
         addStatement("\$N.endObject()", reader)
-        addStatement("return new AutoValue_\$L(\$L)", context.autoValueClass().simpleName,
-            properties.map { it.name }.joinToString())
+        addStatement("return new AutoValue_\$L\$L(\$L)", context.autoValueClass().simpleName,
+            if (context.generic) "<>" else "", properties.map { it.name }.joinToString())
       }.build()
     }
 
@@ -155,8 +167,9 @@ class AutoMoshiExtension : AutoValueExtension() {
     }
 
     return TypeSpec.classBuilder("AutoMoshi_JsonAdapter")
-        .addModifiers(STATIC, FINAL)
         .superclass(ParameterizedTypeName.get(ClassName.get(JsonAdapter::class.java), autoValueClass))
+        .addTypeVariables(context.typeVariables)
+        .addModifiers(STATIC, FINAL)
         .addFields(adapters.values)
         .addMethods(constructor(), fromJson(), toJson())
         .build()

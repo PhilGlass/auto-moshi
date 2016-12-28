@@ -43,10 +43,24 @@ class AutoMoshiExtensionTest {
     }
   }
 
-  @Test fun `Supports extending generic types`() {
-    compiler().compileResources("Base", "ExtendsGeneric").let {
+  @Test fun `Supports simple classes with a generic superclass`() {
+    compiler().compileResources("Base", "SimpleExtendsGeneric").let {
       assertThat(it).succeededWithoutWarnings()
-      assertThat(it).generatedSourceFileEquivalentToResource("AutoValue_ExtendsGeneric")
+      assertThat(it).generatedSourceFileEquivalentToResource("AutoValue_SimpleExtendsGeneric")
+    }
+  }
+
+  @Test fun `Supports generic classes`() {
+    compiler().compileResources("Generic").let {
+      assertThat(it).succeededWithoutWarnings()
+      assertThat(it).generatedSourceFileEquivalentToResource("AutoValue_Generic")
+    }
+  }
+
+  @Test fun `Supports generic classes with a generic superclass`() {
+    compiler().compileResources("Base", "GenericExtendsGeneric").let {
+      assertThat(it).succeededWithoutWarnings()
+      assertThat(it).generatedSourceFileEquivalentToResource("AutoValue_GenericExtendsGeneric")
     }
   }
 

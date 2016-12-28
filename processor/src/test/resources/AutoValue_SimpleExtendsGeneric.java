@@ -13,12 +13,12 @@ import java.lang.String;
 import java.util.List;
 import java.util.Map;
 
-final class AutoValue_ExtendsGeneric extends $AutoValue_ExtendsGeneric {
-  AutoValue_ExtendsGeneric(String _a, List<Integer> _b, Map<Integer, List<String>> _c, Long a, List<Long> b) {
+final class AutoValue_SimpleExtendsGeneric extends $AutoValue_SimpleExtendsGeneric {
+  AutoValue_SimpleExtendsGeneric(String _a, List<Integer> _b, Map<Integer, List<String>> _c, Long a, List<Long> b) {
     super(_a, _b, _c, a, b);
   }
 
-  static final class AutoMoshi_JsonAdapter extends JsonAdapter<ExtendsGeneric> {
+  static final class AutoMoshi_JsonAdapter extends JsonAdapter<SimpleExtendsGeneric> {
     private final JsonAdapter<String> _aAdapter;
     private final JsonAdapter<List<Integer>> _bAdapter;
     private final JsonAdapter<Map<Integer, List<String>>> _cAdapter;
@@ -34,7 +34,7 @@ final class AutoValue_ExtendsGeneric extends $AutoValue_ExtendsGeneric {
       bAdapter = moshi.adapter(Types.newParameterizedType(List.class, Long.class));
     }
 
-    @Override public ExtendsGeneric fromJson(JsonReader reader) throws IOException {
+    @Override public SimpleExtendsGeneric fromJson(JsonReader reader) throws IOException {
       String _a = null;
       List<Integer> _b = null;
       Map<Integer, List<String>> _c = null;
@@ -70,10 +70,10 @@ final class AutoValue_ExtendsGeneric extends $AutoValue_ExtendsGeneric {
         }
       }
       reader.endObject();
-      return new AutoValue_ExtendsGeneric(_a, _b, _c, a, b);
+      return new AutoValue_SimpleExtendsGeneric(_a, _b, _c, a, b);
     }
 
-    @Override public void toJson(JsonWriter writer, ExtendsGeneric value) throws IOException {
+    @Override public void toJson(JsonWriter writer, SimpleExtendsGeneric value) throws IOException {
       writer.beginObject();
       writer.name("_a");
       _aAdapter.toJson(writer, value._a());
