@@ -67,13 +67,13 @@ class AutoMoshiExtension : AutoValueExtension() {
         .addTypeVariables(context.typeVariables)
         .addModifiers(if (isFinal) FINAL else ABSTRACT)
         .addMethod(constructor)
-        .addType(jsonAdapter(context, properties))
+        .addType(jsonAdapter(context, className, properties))
         .build()
 
     return JavaFile.builder(context.packageName(), type).build().toString()
   }
 
-  private fun jsonAdapter(context: Context, properties: List<Property>): TypeSpec {
+  private fun jsonAdapter(context: Context, className: String, properties: List<Property>): TypeSpec {
     val autoValueClass = TypeName.get(context.autoValueClass().asType())
 
     val adapters: Map<Property, FieldSpec> = properties.associateBy({ it }, {
@@ -142,8 +142,8 @@ class AutoMoshiExtension : AutoValueExtension() {
           }
         }
         addStatement("\$N.endObject()", reader)
-        addStatement("return new AutoValue_\$L\$L(\$L)", context.autoValueClass().simpleName,
-            if (context.generic) "<>" else "", properties.map { it.name }.joinToString())
+        addStatement("return new \$L\$L(\$L)", className.removeAll('$'), if (context.generic) "<>" else "",
+            properties.map { it.name }.joinToString())
       }.build()
     }
 

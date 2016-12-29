@@ -64,5 +64,12 @@ class AutoMoshiExtensionTest {
     }
   }
 
+  @Test fun `Supports nested classes`() {
+    compiler().compileResources("Nested").let {
+      assertThat(it).succeededWithoutWarnings()
+      assertThat(it).generatedSourceFileEquivalentToResource("AutoValue_Parent_Nested")
+    }
+  }
+
   private fun compiler() = Compiler.javac().withProcessors(AutoValueProcessor(listOf(AutoMoshiExtension())))
 }
