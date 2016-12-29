@@ -71,5 +71,12 @@ class AutoMoshiExtensionTest {
     }
   }
 
+  @Test fun `Supports bean prefixed properties`() {
+    compiler().compileResources("PrefixedProperties").let {
+      assertThat(it).succeededWithoutWarnings()
+      assertThat(it).generatedSourceFileEquivalentToResource("AutoValue_PrefixedProperties")
+    }
+  }
+
   private fun compiler() = Compiler.javac().withProcessors(AutoValueProcessor(listOf(AutoMoshiExtension())))
 }
