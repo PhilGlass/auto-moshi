@@ -12,7 +12,8 @@ fun Compiler.compileResources(vararg simpleNames: String): Compilation = compile
 fun Compilation.generatedSourceFileWithSimpleName(simpleName: String) =
     generatedSourceFiles().any { it.isNameCompatible(simpleName, SOURCE) }
 
-fun CompilationSubject.generatedSourceFileEquivalentToResource(simpleName: String) =
-    generatedSourceFile("test.$simpleName").hasSourceEquivalentTo(forJavaResource(simpleName))
+fun CompilationSubject.generatedSourceFilesEquivalentToResources(vararg simpleNames: String) = simpleNames.forEach {
+  generatedSourceFile("test.$it").hasSourceEquivalentTo(forJavaResource(it))
+}
 
 private fun forJavaResource(simpleName: String): JavaFileObject = JavaFileObjects.forResource("$simpleName.java")

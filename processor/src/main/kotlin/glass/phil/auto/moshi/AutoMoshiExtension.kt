@@ -25,14 +25,18 @@ import javax.lang.model.element.Modifier.ABSTRACT
 import javax.lang.model.element.Modifier.FINAL
 import javax.lang.model.element.Modifier.PRIVATE
 import javax.lang.model.element.Modifier.PUBLIC
-import javax.lang.model.element.Modifier.STATIC
 import javax.lang.model.element.Name
+import javax.lang.model.element.TypeElement
 import javax.lang.model.type.DeclaredType
 import javax.lang.model.type.ExecutableType
 import javax.lang.model.type.TypeKind.DECLARED
 import javax.lang.model.type.TypeKind.TYPEVAR
 import javax.lang.model.type.TypeMirror
 import javax.lang.model.type.TypeVariable
+import javax.tools.Diagnostic.Kind.ERROR
+
+/** Generated adapter names are prefixed with a $, to reduce autocomplete noise */
+fun adapterName(autoValueClass: TypeElement) = "\$AutoMoshi_${autoValueClass.generatedName()}_JsonAdapter"
 
 @AutoService(AutoValueExtension::class)
 class AutoMoshiExtension : AutoValueExtension() {
@@ -56,7 +60,17 @@ class AutoMoshiExtension : AutoValueExtension() {
     }
 
     val properties = context.properties().map { toProperty(it.key, it.value) }
+    val adapter = jsonAdapter(context, className, properties)
+    try {
+      JavaFile.builder(context.packageName(), adapter).build().writeTo(context.filer)
+    } catch (exception: IOException) {
+      context.messager.printMessage(ERROR, "Unable to write generated class: $exception", context.autoValueClass())
+    }
 
+    // As of AutoValue 1.3, generating a valid subclass in generateClass() is mandatory.
+    // Generating the adapter class in applicable() and skipping generateClass() entirely is unfortunately not
+    // possible, because applicable() is called before methods like consumeMethods() and consumeProperties(). This
+    // means that the set of properties it is passed may not match the finalised set passed to generateClass().
     val constructor = MethodSpec.constructorBuilder()
         .addParameters(properties.map { ParameterSpec.builder(TypeName.get(it.type), it.name).build() })
         .addStatement("super(\$L)", properties.map { it.name }.joinToString())
@@ -67,7 +81,6 @@ class AutoMoshiExtension : AutoValueExtension() {
         .addTypeVariables(context.typeVariables)
         .addModifiers(if (isFinal) FINAL else ABSTRACT)
         .addMethod(constructor)
-        .addType(jsonAdapter(context, className, properties))
         .build()
 
     return JavaFile.builder(context.packageName(), type).build().toString()
@@ -102,7 +115,7 @@ class AutoMoshiExtension : AutoValueExtension() {
         }
       }
 
-      return MethodSpec.constructorBuilder().addParameter(moshi).apply {
+      return MethodSpec.constructorBuilder().addModifiers(PUBLIC).addParameter(moshi).apply {
         if (context.generic) {
           addParameter(typeArgs)
         }
@@ -166,10 +179,10 @@ class AutoMoshiExtension : AutoValueExtension() {
       }.build()
     }
 
-    return TypeSpec.classBuilder("AutoMoshi_JsonAdapter")
+    return TypeSpec.classBuilder(adapterName(context.autoValueClass()))
         .superclass(ParameterizedTypeName.get(ClassName.get(JsonAdapter::class.java), autoValueClass))
         .addTypeVariables(context.typeVariables)
-        .addModifiers(STATIC, FINAL)
+        .addModifiers(PUBLIC, FINAL)
         .addFields(adapters.values)
         .addMethods(constructor(), fromJson(), toJson())
         .build()
