@@ -11,6 +11,9 @@ import com.squareup.javapoet.TypeVariableName
 fun typeName(rawType: ClassName, typeVariables: Collection<TypeVariableName>): TypeName =
     if (typeVariables.isEmpty()) rawType else ParameterizedTypeName.get(rawType, *typeVariables.toTypedArray())
 
+fun parameterizedTypeName(rawType: Class<*>, vararg typeParameters: TypeName): ParameterizedTypeName =
+    ParameterizedTypeName.get(ClassName.get(rawType), *typeParameters)
+
 fun TypeSpec.Builder.addMethods(vararg methods: MethodSpec) = apply { methods.forEach { addMethod(it) } }
 
 fun MethodSpec.Builder.addParameters(vararg params: ParameterSpec) = apply { params.forEach { addParameter(it) } }

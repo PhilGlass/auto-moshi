@@ -4,16 +4,19 @@ import com.google.testing.compile.Compilation
 import com.google.testing.compile.CompilationSubject
 import com.google.testing.compile.Compiler
 import com.google.testing.compile.JavaFileObjects
-import javax.tools.JavaFileObject
 import javax.tools.JavaFileObject.Kind.SOURCE
 
-fun Compiler.compileResources(vararg simpleNames: String): Compilation = compile(simpleNames.map(::forJavaResource))
+data class JavaResource(val simpleName: String, val pathPrefix: String = "", val packageName: String = "test") {
+  val filePath = "$pathPrefix$simpleName.java"
+  val qualifiedName = if (packageName.isNullOrBlank()) simpleName else "$packageName.$simpleName"
+}
+
+fun Compiler.compile(vararg javaResources: JavaResource): Compilation =
+    compile(javaResources.map { JavaFileObjects.forResource(it.filePath) })
 
 fun Compilation.generatedSourceFileWithSimpleName(simpleName: String) =
     generatedSourceFiles().any { it.isNameCompatible(simpleName, SOURCE) }
 
-fun CompilationSubject.generatedSourceFilesEquivalentToResources(vararg simpleNames: String) = simpleNames.forEach {
-  generatedSourceFile("test.$it").hasSourceEquivalentTo(forJavaResource(it))
+fun CompilationSubject.generatedSourceFilesEquivalentTo(vararg javaResources: JavaResource) = javaResources.forEach {
+  generatedSourceFile(it.qualifiedName).hasSourceEquivalentTo(JavaFileObjects.forResource(it.filePath))
 }
-
-private fun forJavaResource(simpleName: String): JavaFileObject = JavaFileObjects.forResource("$simpleName.java")
