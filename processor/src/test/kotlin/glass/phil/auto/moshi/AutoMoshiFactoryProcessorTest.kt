@@ -21,25 +21,38 @@ class AutoMoshiFactoryProcessorTest {
     }
   }
 
-  @Test fun `Supports factory of simple types`() {
+  @Test fun `Supports simple types`() {
     compiler().compile(JavaResource("Simple"), JavaResource("JsonProperty"), factoryResource("SimpleFactory")).let {
       assertThat(it).succeededWithoutWarnings()
       assertThat(it).generatedSourceFilesEquivalentTo(factoryResource("AutoMoshi_SimpleFactory"))
     }
   }
 
-  @Test fun `Supports factory of generic types`() {
-    compiler().compile(JavaResource("Base"), JavaResource("Generic"), JavaResource("GenericExtendsGeneric"),
-        factoryResource("GenericFactory")).let {
+  @Test fun `Supports generic types`() {
+    compiler().compile(
+        JavaResource("Base"), JavaResource("Generic"), JavaResource("GenericExtendsGeneric"),
+        factoryResource("GenericFactory")
+    ).let {
       assertThat(it).succeededWithoutWarnings()
       assertThat(it).generatedSourceFilesEquivalentTo(factoryResource("AutoMoshi_GenericFactory"))
     }
   }
 
-  @Test fun `Supports factory of simple and generic types`() {
+  @Test fun `Supports simple and generic types`() {
     compiler().compile(JavaResource("Simple"), JavaResource("Generic"), factoryResource("MixedFactory")).let {
       assertThat(it).succeededWithoutWarnings()
       assertThat(it).generatedSourceFilesEquivalentTo(factoryResource("AutoMoshi_MixedFactory"))
+    }
+  }
+
+  @Test fun `Supports simple and generic types in different packages`() {
+    compiler().compile(
+        JavaResource("Simple"), JavaResource(packageName = "different", simpleName = "DifferentPackage"),
+        JavaResource("Generic"), JavaResource(packageName = "different", simpleName = "DifferentPackageGeneric"),
+        factoryResource("DifferentPackagesFactory")
+    ).let {
+      assertThat(it).succeededWithoutWarnings()
+      assertThat(it).generatedSourceFilesEquivalentTo(factoryResource("AutoMoshi_DifferentPackagesFactory"))
     }
   }
 

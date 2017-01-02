@@ -5,6 +5,8 @@ import com.google.auto.common.Visibility
 import com.google.auto.common.Visibility.effectiveVisibilityOfElement
 import com.google.auto.service.AutoService
 import com.google.auto.value.AutoValue
+import com.squareup.javapoet.ClassName
+import com.squareup.javapoet.CodeBlock
 import com.squareup.javapoet.JavaFile
 import com.squareup.javapoet.MethodSpec
 import com.squareup.javapoet.ParameterSpec
@@ -27,7 +29,8 @@ import javax.lang.model.element.Modifier.FINAL
 import javax.lang.model.element.TypeElement
 import javax.tools.Diagnostic.Kind.ERROR
 
-private val FACTORY_ANNOTATION = AutoMoshi.Factory::class.java.simpleName
+private val FACTORY_ANNOTATION = "@AutoMoshi.Factory"
+private val UNBOUNDED_CLASS = parameterizedTypeName(Class::class.java, WildcardTypeName.subtypeOf(TypeName.OBJECT))
 
 @AutoService(Processor::class)
 class AutoMoshiFactoryProcessor : AbstractProcessor() {
@@ -68,9 +71,19 @@ class AutoMoshiFactoryProcessor : AbstractProcessor() {
     return processingEnv.typeUtils.isSubtype(type.asType(), expectedSupertype)
   }
 
-  private fun adapterFactory(toExtend: TypeElement, autoMoshiTypes: List<TypeElement>): TypeSpec {
+  private fun adapterFactory(factoryClass: TypeElement, autoMoshiTypes: List<TypeElement>): TypeSpec {
     fun create(): MethodSpec {
-      val (simple, generic) = autoMoshiTypes.partition { it.typeParameters.isEmpty() }
+      fun sameClassClause(candidateType: TypeElement, classObject: Any): CodeBlock {
+        if (candidateType.isVisibleTo(factoryClass)) {
+          return CodeBlock.of("\$T.class.equals(\$N)", ClassName.get(candidateType), classObject)
+        }
+        return CodeBlock.of("\$S.equals(\$N.getCanonicalName())", candidateType.qualifiedName, classObject)
+      }
+
+      fun adapterType(autoMoshiType: TypeElement) = ClassName.get(autoMoshiType.packageName, adapterName(autoMoshiType))
+
+      val (simple, generic) = autoMoshiTypes.sortedByDescending { it.isVisibleTo(factoryClass) }
+          .partition { it.typeParameters.isEmpty() }
 
       val type = ParameterSpec.builder(Type::class.java, "type").build()
       val annotations = ParameterSpec.builder(parameterizedTypeName(Set::class.java,
@@ -83,20 +96,25 @@ class AutoMoshiFactoryProcessor : AbstractProcessor() {
           .addParameters(type, annotations, moshi)
 
       return builder.apply {
-        simple.forEach {
-          controlFlow("if (\$T.class.equals(\$N))", it, type) {
-            addStatement("return new \$L(\$N)", adapterName(it), moshi)
+        if (simple.isNotEmpty()) {
+          controlFlow("if (\$N instanceof \$T)", type, Class::class.java) {
+            addStatement("final \$1T clazz = (\$1T) \$2N", UNBOUNDED_CLASS, type)
+            simple.forEach {
+              controlFlow("if (\$L)", sameClassClause(it, "clazz")) {
+                addStatement("return new \$T(\$N)", adapterType(it), moshi)
+              }
+            }
           }
         }
         if (generic.isNotEmpty()) {
           controlFlow("if (\$N instanceof \$T)", type, ParameterizedType::class.java) {
-            addStatement("final \$T rawType = ((\$T) \$N).getRawType()", Type::class.java,
+            addStatement("final \$1T rawType = (\$1T) ((\$2T) \$3N).getRawType()", UNBOUNDED_CLASS,
                 ParameterizedType::class.java, type)
             addStatement("final \$T typeArgs = ((\$T) \$N).getActualTypeArguments()", Array<Type>::class.java,
                 ParameterizedType::class.java, type)
             generic.forEach {
-              controlFlow("if (\$T.class.equals(rawType))", processingEnv.typeUtils.erasure(it.asType())) {
-                addStatement("return new \$L<>(\$N, typeArgs)", adapterName(it), moshi)
+              controlFlow("if (\$L)", sameClassClause(it, "rawType")) {
+                addStatement("return new \$T<>(\$N, typeArgs)", adapterType(it), moshi)
               }
             }
           }
@@ -105,8 +123,8 @@ class AutoMoshiFactoryProcessor : AbstractProcessor() {
       }.build()
     }
 
-    return TypeSpec.classBuilder("AutoMoshi_${toExtend.generatedName()}")
-        .superclass(TypeName.get(toExtend.asType()))
+    return TypeSpec.classBuilder("AutoMoshi_${factoryClass.generatedName()}")
+        .superclass(TypeName.get(factoryClass.asType()))
         .addModifiers(FINAL)
         .addMethod(create())
         .build()
