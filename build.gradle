@@ -11,3 +11,32 @@ subprojects {
     mavenCentral()
   }
 }
+
+ext.publishing = [
+  repo: [
+    username: findProperty('repoUsername') ?: '<username>',
+    password: findProperty('repoPassword') ?: '<password>',
+    releaseUrl: 'https://oss.sonatype.org/service/local/staging/deploy/maven2/',
+    snapshotUrl: 'https://oss.sonatype.org/content/repositories/snapshots/'
+  ],
+  pom: [
+    groupId: 'glass.phil.auto.moshi',
+    version: '0.1.0-SNAPSHOT',
+    description: 'An AutoValue extension that supports JSON serialization and deserialization through Moshi.',
+    url: 'https://github.com/PhilGlass/auto-moshi/',
+    scm: [
+      url: 'https://github.com/PhilGlass/auto-moshi/',
+      connection: 'scm:git:git://github.com/PhilGlass/auto-moshi/',
+      developerConnection: 'scm:git:ssh://git@github.com/PhilGlass/auto-moshi/'
+    ],
+    license: [
+      name: 'The Apache Software License, Version 2.0',
+      url: 'https://www.apache.org/licenses/LICENSE-2.0',
+      distribution: 'repo'
+    ],
+    developer: [
+      id: 'PhilGlass',
+      name: 'Phil Glass'
+    ]
+  ]
+]

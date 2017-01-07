@@ -1,0 +1,73 @@
+apply plugin: 'maven'
+apply plugin: 'signing'
+
+group publishing.pom.groupId
+version publishing.pom.version
+
+afterEvaluate {
+  uploadArchives.repositories.mavenDeployer {
+    pom {
+      groupId = publishing.pom.groupId
+      artifactId = publishing.pom.artifactId
+      version = publishing.pom.version
+
+      project {
+        name publishing.pom.name
+        packaging publishing.pom.packaging
+        description publishing.pom.description
+        url publishing.pom.url
+
+        scm {
+          url publishing.pom.scm.url
+          connection publishing.pom.scm.url
+          developerConnection publishing.pom.scm.developerConnection
+        }
+
+        licenses {
+          license {
+            name publishing.pom.license.name
+            url publishing.pom.license.url
+            distribution publishing.pom.license.distribution
+          }
+        }
+
+        developers {
+          developer {
+            id publishing.pom.developer.id
+            name publishing.pom.developer.name
+          }
+        }
+      }
+    }
+
+    repository(url: publishing.repo.releaseUrl) {
+      authentication(userName: publishing.repo.username, password: publishing.repo.password)
+    }
+
+    snapshotRepository(url: publishing.repo.snapshotUrl) {
+      authentication(userName: publishing.repo.username, password: publishing.repo.password)
+    }
+
+    beforeDeployment { signing.signPom(it) }
+  }
+
+  task sourcesJar(type: Jar, dependsOn: classes) {
+    classifier = 'sources'
+    from sourceSets.main.allSource
+  }
+
+  task javadocJar(type: Jar, dependsOn: javadoc) {
+    classifier = 'javadoc'
+    from javadoc.getDestinationDir()
+  }
+
+  artifacts {
+    archives sourcesJar
+    archives javadocJar
+  }
+
+  signing {
+    required { gradle.taskGraph.hasTask(uploadArchives) }
+    sign configurations.archives
+  }
+}

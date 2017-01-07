@@ -5,6 +5,7 @@ buildscript {
 }
 
 apply plugin: 'kotlin'
+apply from: file("$rootDir/gradle/publishing.gradle")
 
 dependencies {
   compile project(':annotations')
@@ -20,4 +21,12 @@ dependencies {
   testCompile deps.test.junit
   testCompile deps.test.truth
   testCompile deps.test.compileTesting
+}
+
+ext {
+  publishing.pom << [
+    name: 'AutoMoshi processor',
+    artifactId: 'auto-moshi-processor',
+    packaging: 'jar'
+  ]
 }

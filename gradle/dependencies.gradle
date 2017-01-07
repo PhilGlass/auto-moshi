@@ -1,27 +1,25 @@
 import org.gradle.internal.jvm.Jvm
 
 ext {
-  kotlinVersion = '1.0.6'
+  def kotlinVersion = '1.0.6'
 
   deps = [
-      autoValue: 'com.google.auto.value:auto-value:1.3',
-      moshi: 'com.squareup.moshi:moshi:1.3.1',
-      javaPoet: 'com.squareup:javapoet:1.8.0',
-      autoCommon: 'com.google.auto:auto-common:0.8',
-      autoService: 'com.google.auto.service:auto-service:1.0-rc2'
-  ]
-
-  deps.kotlin = [
+    autoValue: 'com.google.auto.value:auto-value:1.3',
+    moshi: 'com.squareup.moshi:moshi:1.3.1',
+    javaPoet: 'com.squareup:javapoet:1.8.0',
+    autoCommon: 'com.google.auto:auto-common:0.8',
+    autoService: 'com.google.auto.service:auto-service:1.0-rc2',
+    kotlin: [
       plugin: "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlinVersion",
       stdlib: "org.jetbrains.kotlin:kotlin-stdlib:$kotlinVersion"
-  ]
-
-  deps.test = [
+    ],
+    test: [
       junit: 'junit:junit:4.12',
       truth: 'com.google.truth:truth:0.3',
       compileTesting: [
-          'com.google.testing.compile:compile-testing:0.10',
-          files(Jvm.current().getToolsJar())
+        'com.google.testing.compile:compile-testing:0.10',
+        files(Jvm.current().getToolsJar())
       ]
+    ]
   ]
 }

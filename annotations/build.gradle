@@ -1,4 +1,5 @@
 apply plugin: 'java'
+apply from: file("$rootDir/gradle/publishing.gradle")
 
 sourceCompatibility = 1.6
 targetCompatibility = 1.6
@@ -6,4 +7,12 @@ targetCompatibility = 1.6
 dependencies {
   compileOnly deps.autoValue
   compileOnly deps.moshi
+}
+
+ext {
+  publishing.pom << [
+    name: 'AutoMoshi annotations',
+    artifactId: 'auto-moshi-annotations',
+    packaging: 'jar'
+  ]
 }
