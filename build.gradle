@@ -21,7 +21,7 @@ ext.publishing = [
   ],
   pom: [
     groupId: 'glass.phil.auto.moshi',
-    version: '0.1.0-SNAPSHOT',
+    version: '0.1.0',
     description: 'An AutoValue extension that supports JSON serialization and deserialization through Moshi.',
     url: 'https://github.com/PhilGlass/auto-moshi/',
     scm: [
