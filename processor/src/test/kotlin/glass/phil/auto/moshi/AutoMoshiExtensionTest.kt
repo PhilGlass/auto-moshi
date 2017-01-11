@@ -33,10 +33,10 @@ class AutoMoshiExtensionTest {
   }
 
   @Test fun `Supports @Nullable`() {
-    compiler().compile(JavaResource("Nullable"), JavaResource("NullableProperty")).let {
+    compiler().compile(JavaResource("Nullable"), JavaResource("NullableProperties")).let {
       assertThat(it).succeededWithoutWarnings()
-      assertThat(it).generatedSourceFilesEquivalentTo(JavaResource("AutoValue_NullableProperty"),
-          JavaResource("\$AutoMoshi_NullableProperty_JsonAdapter"))
+      assertThat(it).generatedSourceFilesEquivalentTo(JavaResource("AutoValue_NullableProperties"),
+          JavaResource("\$AutoMoshi_NullableProperties_JsonAdapter"))
     }
   }
 

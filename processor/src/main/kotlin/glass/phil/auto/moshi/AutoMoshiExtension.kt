@@ -29,7 +29,6 @@ import javax.lang.model.element.Name
 import javax.lang.model.element.TypeElement
 import javax.lang.model.type.DeclaredType
 import javax.lang.model.type.ExecutableType
-import javax.lang.model.type.TypeKind.DECLARED
 import javax.lang.model.type.TypeKind.TYPEVAR
 import javax.lang.model.type.TypeMirror
 import javax.lang.model.type.TypeVariable
@@ -100,11 +99,11 @@ class AutoMoshiExtension : AutoValueExtension() {
       val typeArgs = ParameterSpec.builder(Array<Type>::class.java, "typeArgs").build()
 
       fun resolve(type: TypeMirror): CodeBlock {
-        return if (type.kind == DECLARED && (type as DeclaredType).typeArguments.isNotEmpty()) {
+        return if (type.parameterized) {
           val rawType = context.types.erasure(type)
           CodeBlock.builder().apply {
             add("\$T.newParameterizedType(\$T.class", Types::class.java, rawType)
-            type.typeArguments.forEach { add(", \$L", resolve(it)) }
+            (type as DeclaredType).typeArguments.forEach { add(", \$L", resolve(it)) }
             add(")")
           }.build()
         } else if (type.kind == TYPEVAR) {
@@ -120,8 +119,19 @@ class AutoMoshiExtension : AutoValueExtension() {
           addParameter(typeArgs)
         }
         for ((property, adapter) in adapters) {
-          addStatement("\$N = \$N.adapter(\$L)\$L", adapter, moshi, resolve(property.type),
-              if (property.nullable) ".nullSafe()" else "")
+          if (property.nullable) {
+            // When we aren't assigning the adapter directly to a field (because we're calling nullSafe()), javac
+            // is only able to infer the correct type for the adapter(Class<T>) overload. A type witness is required
+            // when using the adapter(Type) overload.
+            val witness = if (property.type.parameterized || property.type.kind == TYPEVAR) {
+              CodeBlock.of("<\$T>", property.type)
+            } else {
+              CodeBlock.of("")
+            }
+            addStatement("\$N = \$N.\$Ladapter(\$L).nullSafe()", adapter, moshi, witness, resolve(property.type))
+          } else {
+            addStatement("\$N = \$N.adapter(\$L)", adapter, moshi, resolve(property.type))
+          }
         }
       }.build()
     }

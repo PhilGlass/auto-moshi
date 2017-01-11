@@ -1,8 +1,10 @@
 package glass.phil.auto.moshi
 
+import javax.lang.model.type.DeclaredType
 import javax.lang.model.type.TypeKind.BOOLEAN
 import javax.lang.model.type.TypeKind.BYTE
 import javax.lang.model.type.TypeKind.CHAR
+import javax.lang.model.type.TypeKind.DECLARED
 import javax.lang.model.type.TypeKind.DOUBLE
 import javax.lang.model.type.TypeKind.FLOAT
 import javax.lang.model.type.TypeKind.INT
@@ -15,3 +17,5 @@ val TypeMirror.defaultValue: String get() = when (kind) {
   CHAR, BYTE, SHORT, INT, LONG, FLOAT, DOUBLE -> "0"
   else -> "null"
 }
+
+val TypeMirror.parameterized: Boolean get() = kind == DECLARED && (this as DeclaredType).typeArguments.isNotEmpty()
