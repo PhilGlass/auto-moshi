@@ -80,11 +80,19 @@ class AutoMoshiExtensionTest {
     }
   }
 
-  @Test fun `Supports bean prefixed properties`() {
+  @Test fun `Handles bean prefixed properties`() {
     compiler().compile(JavaResource("PrefixedProperties")).let {
       assertThat(it).succeededWithoutWarnings()
       assertThat(it).generatedSourceFilesEquivalentTo(JavaResource("AutoValue_PrefixedProperties"),
           JavaResource("\$AutoMoshi_PrefixedProperties_JsonAdapter"))
+    }
+  }
+
+  @Test fun `Handles properties with colliding names`() {
+    compiler().compile(JavaResource("CollidingNames")).let {
+      assertThat(it).succeededWithoutWarnings()
+      assertThat(it).generatedSourceFilesEquivalentTo(JavaResource("AutoValue_CollidingNames"),
+          JavaResource("\$AutoMoshi_CollidingNames_JsonAdapter"))
     }
   }
 

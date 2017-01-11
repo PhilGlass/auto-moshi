@@ -8,6 +8,7 @@ import com.squareup.javapoet.CodeBlock
 import com.squareup.javapoet.FieldSpec
 import com.squareup.javapoet.JavaFile
 import com.squareup.javapoet.MethodSpec
+import com.squareup.javapoet.NameAllocator
 import com.squareup.javapoet.ParameterSpec
 import com.squareup.javapoet.ParameterizedTypeName
 import com.squareup.javapoet.TypeName
@@ -86,12 +87,13 @@ class AutoMoshiExtension : AutoValueExtension() {
   }
 
   private fun jsonAdapter(context: Context, className: String, properties: List<Property>): TypeSpec {
+    val nameAllocator = NameAllocator()
     val autoValueClass = TypeName.get(context.autoValueClass().asType())
 
     val adapters: Map<Property, FieldSpec> = properties.associateBy({ it }, {
       val boxedType = TypeName.get(it.type).let { if (it.isPrimitive) it.box() else it }
       val fieldType = ParameterizedTypeName.get(ClassName.get(JsonAdapter::class.java), boxedType)
-      FieldSpec.builder(fieldType, "${it.name}Adapter", PRIVATE, FINAL).build()
+      FieldSpec.builder(fieldType, nameAllocator.newName("${it.name}Adapter"), PRIVATE, FINAL).build()
     })
 
     fun constructor(): MethodSpec {
@@ -137,7 +139,7 @@ class AutoMoshiExtension : AutoValueExtension() {
     }
 
     fun fromJson(): MethodSpec {
-      val reader = ParameterSpec.builder(JsonReader::class.java, "reader").build()
+      val reader = ParameterSpec.builder(JsonReader::class.java, nameAllocator.newName("reader")).build()
       val builder = MethodSpec.methodBuilder("fromJson")
           .addAnnotation(Override::class.java)
           .addModifiers(PUBLIC)
@@ -147,15 +149,16 @@ class AutoMoshiExtension : AutoValueExtension() {
 
       return builder.apply {
         properties.forEach {
-          addStatement("\$T \$N = \$L", it.type, it.name, it.type.defaultValue)
+          addStatement("\$T \$N = \$L", it.type, nameAllocator.newName(it.name, it), it.type.defaultValue)
         }
         addStatement("\$N.beginObject()", reader)
         controlFlow("while (\$N.hasNext())", reader) {
-          addStatement("final \$T name = \$N.nextName()", String::class.java, reader)
-          controlFlow("switch (name)") {
+          val name = nameAllocator.newName("name")
+          addStatement("final \$T \$N = \$N.nextName()", String::class.java, name, reader)
+          controlFlow("switch (\$N)", name) {
             for ((property, adapter) in adapters) {
               controlFlow("case \$S:", property.serializedName) {
-                addStatement("\$N = \$N.fromJson(\$N)", property.name, adapter, reader)
+                addStatement("\$N = \$N.fromJson(\$N)", nameAllocator.get(property), adapter, reader)
                 addStatement("break")
               }
             }
@@ -166,7 +169,7 @@ class AutoMoshiExtension : AutoValueExtension() {
         }
         addStatement("\$N.endObject()", reader)
         addStatement("return new \$L\$L(\$L)", className.removeAll('$'), if (context.generic) "<>" else "",
-            properties.map { it.name }.joinToString())
+            properties.map { nameAllocator.get(it) }.joinToString())
       }.build()
     }
 
