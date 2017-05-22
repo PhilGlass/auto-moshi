@@ -19,7 +19,6 @@ dependencies {
   kapt deps.autoService
 
   testCompile deps.test.junit
-  testCompile deps.test.truth
   testCompile deps.test.compileTesting
 }
 

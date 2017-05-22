@@ -22,7 +22,6 @@ import com.squareup.moshi.Types
 import java.io.IOException
 import java.lang.reflect.Type
 import javax.lang.model.element.ExecutableElement
-import javax.lang.model.element.Modifier.ABSTRACT
 import javax.lang.model.element.Modifier.FINAL
 import javax.lang.model.element.Modifier.PRIVATE
 import javax.lang.model.element.Modifier.PUBLIC
@@ -50,7 +49,7 @@ class AutoMoshiExtension : AutoValueExtension() {
 
   override fun applicable(context: Context) = isAnnotationPresent(context.autoValueClass(), AutoMoshi::class.java)
 
-  override fun generateClass(context: Context, className: String, classToExtend: String, isFinal: Boolean): String {
+  override fun generateClass(context: Context, className: String, classToExtend: String, isFinal: Boolean): String? {
     fun toProperty(name: String, method: ExecutableElement): Property {
       val resolvedMethod = context.types.asMemberOf(context.autoValueClass().asType() as DeclaredType, method)
       val resolvedType = (resolvedMethod as ExecutableType).returnType
@@ -66,24 +65,7 @@ class AutoMoshiExtension : AutoValueExtension() {
     } catch (exception: IOException) {
       context.messager.printMessage(ERROR, "Unable to write generated class: $exception", context.autoValueClass())
     }
-
-    // As of AutoValue 1.3, generating a valid subclass in generateClass() is mandatory.
-    // Generating the adapter class in applicable() and skipping generateClass() entirely is unfortunately not
-    // possible, because applicable() is called before methods like consumeMethods() and consumeProperties(). This
-    // means that the set of properties it is passed may not match the finalised set passed to generateClass().
-    val constructor = MethodSpec.constructorBuilder()
-        .addParameters(properties.map { ParameterSpec.builder(TypeName.get(it.type), it.name).build() })
-        .addStatement("super(\$L)", properties.map { it.name }.joinToString())
-        .build()
-
-    val type = TypeSpec.classBuilder(className)
-        .superclass(typeName(ClassName.get(context.packageName(), classToExtend), context.typeVariables))
-        .addTypeVariables(context.typeVariables)
-        .addModifiers(if (isFinal) FINAL else ABSTRACT)
-        .addMethod(constructor)
-        .build()
-
-    return JavaFile.builder(context.packageName(), type).build().toString()
+    return null
   }
 
   private fun jsonAdapter(context: Context, className: String, properties: List<Property>): TypeSpec {

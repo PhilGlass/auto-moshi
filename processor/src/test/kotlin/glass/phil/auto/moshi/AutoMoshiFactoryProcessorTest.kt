@@ -17,14 +17,14 @@ class AutoMoshiFactoryProcessorTest {
   @Test fun `Generates no-op factory when there are no @AutoMoshi classes`() {
     compiler().compile(factoryResource("NoOpFactory")).let {
       assertThat(it).succeededWithoutWarnings()
-      assertThat(it).generatedSourceFilesEquivalentTo(factoryResource("AutoMoshi_NoOpFactory"))
+      assertThat(it).generatedSourceFileEquivalentTo(factoryResource("AutoMoshi_NoOpFactory"))
     }
   }
 
   @Test fun `Supports simple types`() {
     compiler().compile(JavaResource("Simple"), JavaResource("JsonProperty"), factoryResource("SimpleFactory")).let {
       assertThat(it).succeededWithoutWarnings()
-      assertThat(it).generatedSourceFilesEquivalentTo(factoryResource("AutoMoshi_SimpleFactory"))
+      assertThat(it).generatedSourceFileEquivalentTo(factoryResource("AutoMoshi_SimpleFactory"))
     }
   }
 
@@ -34,14 +34,14 @@ class AutoMoshiFactoryProcessorTest {
         factoryResource("GenericFactory")
     ).let {
       assertThat(it).succeededWithoutWarnings()
-      assertThat(it).generatedSourceFilesEquivalentTo(factoryResource("AutoMoshi_GenericFactory"))
+      assertThat(it).generatedSourceFileEquivalentTo(factoryResource("AutoMoshi_GenericFactory"))
     }
   }
 
   @Test fun `Supports simple and generic types`() {
     compiler().compile(JavaResource("Simple"), JavaResource("Generic"), factoryResource("MixedFactory")).let {
       assertThat(it).succeededWithoutWarnings()
-      assertThat(it).generatedSourceFilesEquivalentTo(factoryResource("AutoMoshi_MixedFactory"))
+      assertThat(it).generatedSourceFileEquivalentTo(factoryResource("AutoMoshi_MixedFactory"))
     }
   }
 
@@ -52,14 +52,14 @@ class AutoMoshiFactoryProcessorTest {
         factoryResource("DifferentPackagesFactory")
     ).let {
       assertThat(it).succeededWithoutWarnings()
-      assertThat(it).generatedSourceFilesEquivalentTo(factoryResource("AutoMoshi_DifferentPackagesFactory"))
+      assertThat(it).generatedSourceFileEquivalentTo(factoryResource("AutoMoshi_DifferentPackagesFactory"))
     }
   }
 
   @Test fun `Supports nested factory`() {
     compiler().compile(JavaResource("Simple"), factoryResource("NestedFactory")).let {
       assertThat(it).succeededWithoutWarnings()
-      assertThat(it).generatedSourceFilesEquivalentTo(factoryResource("AutoMoshi_NestedFactory_Factory"))
+      assertThat(it).generatedSourceFileEquivalentTo(factoryResource("AutoMoshi_NestedFactory_Factory"))
     }
   }
 

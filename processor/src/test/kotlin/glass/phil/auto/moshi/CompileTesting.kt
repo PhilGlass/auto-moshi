@@ -17,6 +17,5 @@ fun Compiler.compile(vararg javaResources: JavaResource): Compilation =
 fun Compilation.generatedSourceFileWithSimpleName(simpleName: String) =
     generatedSourceFiles().any { it.isNameCompatible(simpleName, SOURCE) }
 
-fun CompilationSubject.generatedSourceFilesEquivalentTo(vararg javaResources: JavaResource) = javaResources.forEach {
-  generatedSourceFile(it.qualifiedName).hasSourceEquivalentTo(JavaFileObjects.forResource(it.filePath))
-}
+fun CompilationSubject.generatedSourceFileEquivalentTo(resource: JavaResource) =
+    generatedSourceFile(resource.qualifiedName).hasSourceEquivalentTo(JavaFileObjects.forResource(resource.filePath))
