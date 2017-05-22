@@ -15,7 +15,7 @@ dependencies {
   compile deps.moshi
   compile deps.javaPoet
   compile deps.autoCommon
-  compile deps.autoService
+  compileOnly deps.autoService
   kapt deps.autoService
 
   testCompile deps.test.junit
