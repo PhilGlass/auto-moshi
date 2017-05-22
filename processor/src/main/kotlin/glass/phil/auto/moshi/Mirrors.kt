@@ -12,10 +12,10 @@ import javax.lang.model.type.TypeKind.LONG
 import javax.lang.model.type.TypeKind.SHORT
 import javax.lang.model.type.TypeMirror
 
-val TypeMirror.defaultValue: String get() = when (kind) {
+val TypeMirror.defaultValue get() = when (kind) {
   BOOLEAN -> "false"
   CHAR, BYTE, SHORT, INT, LONG, FLOAT, DOUBLE -> "0"
   else -> "null"
 }
 
-val TypeMirror.parameterized: Boolean get() = kind == DECLARED && (this as DeclaredType).typeArguments.isNotEmpty()
+val TypeMirror.parameterized get() = kind == DECLARED && (this as DeclaredType).typeArguments.isNotEmpty()

@@ -6,7 +6,7 @@ import com.google.auto.common.Visibility
 import javax.lang.model.element.Element
 import javax.lang.model.element.Modifier.STATIC
 
-val Element.packageName: String get() = getPackage(this).qualifiedName.toString()
+val Element.packageName get() = getPackage(this).qualifiedName.toString()
 
 fun Element.hasAnnotation(simpleName: String) = annotationMirrors
     .map { it.annotationType.asElement().simpleName }.any { it.contentEquals(simpleName) }

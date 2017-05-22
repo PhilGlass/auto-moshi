@@ -1,7 +1,7 @@
 import org.gradle.internal.jvm.Jvm
 
 ext {
-  def kotlinVersion = '1.0.6'
+  def kotlinVersion = '1.1.2'
 
   deps = [
     autoValue: 'com.google.auto.value:auto-value:1.3',
