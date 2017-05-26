@@ -47,16 +47,16 @@ To use AutoMoshi in an Android project, add the following lines to your `build.g
 
 ```groovy
 dependencies {
-  provided 'glass.phil.auto.moshi:auto-moshi-annotations:0.1.0'
-  annotationProcessor 'glass.phil.auto.moshi:auto-moshi-processor:0.1.0'
+  provided 'glass.phil.auto.moshi:auto-moshi-annotations:0.2.0'
+  annotationProcessor 'glass.phil.auto.moshi:auto-moshi-processor:0.2.0'
 }
 ```
 
-As these artifacts are available only at compile time, an explicit dependency on Moshi is required:
+As these artifacts are available only at compile time, an explicit dependency on Moshi is also required:
 
 ```groovy
 dependencies {
-  compile 'com.squareup.moshi:moshi:1.3.1'
+  compile 'com.squareup.moshi:moshi:1.5.0'
 }
 ```
 
